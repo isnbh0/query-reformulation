@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "interactive-retrieval"
+version = "0.1.0"
+description = ""
+authors = ["JudePark96 <park.jude.96@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+loguru = "^0.7"
+numpy = "^1.26.4"
+python = "^3.10"
+beir = "^2.0.0"
+transformers = "^4.46.0"
+
+# ===========================================
+# =========== START OF TORCH PART ===========
+torch = { version = "^2.3", source = "pytorch-cpu", markers = "extra=='cpu' and extra!='cuda'" }
+torchvision = { version = "^0.18", source = "pytorch-cpu", markers = "extra=='cpu' and extra!='cuda'" }
+openai = "^1.52.2"
+faiss-gpu = {version = "^1.7.2", platform = "linux"}
+wget = "^3.2"
+
+[tool.poetry.group.cuda]
+optional = true
+
+# https://github.com/pytorch/pytorch/blob/main/RELEASE.md#release-compatibility-matrix
+[tool.poetry.group.cuda.dependencies]
+torch = { version = "^2.3", source = "pytorch-cuda", markers = "extra=='cuda' and extra!='cpu'" }
+torchvision = { version = "^0.18", source = "pytorch-cuda", markers = "extra=='cuda' and extra!='cpu'" }
+
+[tool.poetry.extras]
+cpu = ["torch", "torchvision"]
+cuda = ["torch", "torchvision"]
+
+[[tool.poetry.source]]
+name = "pytorch-cuda"
+priority = "explicit"
+url = "https://download.pytorch.org/whl/cu118"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+priority = "explicit"
+url = "https://download.pytorch.org/whl/cpu"
+
+# ============ END OF TORCH PART ============
+# ===========================================
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
