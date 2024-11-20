@@ -19,6 +19,9 @@ torchvision = { version = "^0.18", source = "pytorch-cpu", markers = "extra=='cp
 openai = "^1.52.2"
 faiss-gpu = {version = "^1.7.2", platform = "linux"}
 wget = "^3.2"
+omegaconf = "^2.3.0"
+accelerate = "^1.1.1"
+tiktoken = "^0.8.0"
 
 [tool.poetry.group.cuda]
 optional = true

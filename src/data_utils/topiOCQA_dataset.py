@@ -10,10 +10,10 @@ from src.tools.logging_tools import LOGGER
 
 
 class TopiOCQARewriterIRDataset(BaseDataset):
-    def __init__(self, args: Namespace, tokenizer: AutoTokenizer):
+    def __init__(self, args: Namespace, dataset_path: str, tokenizer: AutoTokenizer):
         super().__init__(tokenizer)
         self.args = args
-        self.data = self.load_jsonl(args.data_path)
+        self.data = self.load_jsonl(dataset_path)
         self.examples = []
 
     def _prepare_context_and_query(self, instance: Dict) -> tuple:
@@ -61,32 +61,31 @@ class TopiOCQARewriterIRDataset(BaseDataset):
                 
         return self.padding_seq_to_same_length(flat_contexts, max_pad_length=self.args.max_concat_length)
 
+    def process_instance(self, instance):
+        # Prepare inputs
+        ctx_utts_text, cur_utt_text = self._prepare_context_and_query(instance)
+        flat_contexts, flat_contexts_mask = self._build_flat_contexts(ctx_utts_text, cur_utt_text)
+        
+        # Prepare target
+        target_seq = instance['rewrite'] if self.args.decode_type == "reformulation" else instance['answer']
+        target_encoding = self.tokenizer(target_seq, padding="max_length", 
+                                      max_length=self.args.max_response_length,
+                                      truncation=True, return_tensors="pt")
+        labels = target_encoding.input_ids
+        labels[labels == self.tokenizer.pad_token_id] = -100
+        
+        # Build example
+        return {
+            "input_ids": torch.tensor(flat_contexts, dtype=torch.long),
+            "attention_mask": torch.tensor(flat_contexts_mask, dtype=torch.long),
+            "labels": labels.squeeze(dim=0),
+        }
+
     def process_data(self) -> List[Dict]:
         """Process data into model-ready format"""
         self.examples = []
-        
-        for instance in tqdm(self.data, desc="Processing data"):
-            # Prepare inputs
-            ctx_utts_text, cur_utt_text = self._prepare_context_and_query(instance)
-            flat_contexts, flat_contexts_mask = self._build_flat_contexts(ctx_utts_text, cur_utt_text)
-            
-            # Prepare target
-            target_seq = instance['rewrite'] if self.args.decode_type == "reformulation" else instance['answer']
-            target_encoding = self.tokenizer(target_seq, padding="max_length", 
-                                          max_length=self.args.max_response_length,
-                                          truncation=True, return_tensors="pt")
-            labels = target_encoding.input_ids
-            labels[labels == self.tokenizer.pad_token_id] = -100
-            
-            # Build example
-            self.examples.append({
-                "contexts": {
-                    "input_ids": torch.tensor(flat_contexts, dtype=torch.long),
-                    "attention_mask": torch.tensor(flat_contexts_mask, dtype=torch.long)
-                },
-                "labels": labels.squeeze(dim=0)
-            })
-            
+        for instance in tqdm(self.data[:1000], desc="Processing data"):
+            self.examples.append(self.process_instance(instance))
         return self.examples
     
     def __len__(self):
@@ -94,6 +93,9 @@ class TopiOCQARewriterIRDataset(BaseDataset):
     
     def __getitem__(self, idx):
         return self.examples[idx]
+    
+    def collate_fn(self, batch: List[Dict]):
+        return batch
     
 if __name__ == "__main__":
     args = Namespace(
@@ -108,9 +110,11 @@ if __name__ == "__main__":
     dataset = TopiOCQARewriterIRDataset(args, tokenizer)
     dataset.process_data()
     
-    loader = DataLoader(dataset, batch_size=16, shuffle=True)
+    loader = DataLoader(dataset, batch_size=16, shuffle=True, collate_fn=dataset.collate_fn)
     
     for batch in loader:
+        print(batch)
+        break
         for k, v in batch['contexts'].items():
             LOGGER.info(f"{k}: {v.shape}")
         for k, v in batch.items():

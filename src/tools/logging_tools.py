@@ -15,6 +15,20 @@ LOGGER = loguru.logger
 LOGGER.remove()
 LOGGER.add(sink=sys.stdout, level='TRACE', format=LOGGING_FORMAT, enqueue=True, diagnose=True)
 
+# Step 3: Create a LoguruHandler to bridge standard logging to loguru
+class LoguruHandler(logging.Handler):
+    def emit(self, record):
+        # Get the log level
+        try:
+            level = LOGGER.level(record.levelname).name
+        except ValueError:
+            level = record.levelname
+
+        # Log the message using Loguru
+        LOGGER.log(level, record.getMessage())
+
+
+
 # Redirect standard logging to loguru
 # class InterceptHandler(logging.Handler):
 #     def emit(self, record):
