@@ -19,17 +19,22 @@ class FaissIndexer:
     if not self.index.is_trained:
       self.index.train(embeddings)
     self.index.add(embeddings)
-    
-  def serialize(self, dir_path: str | Path) -> None:
-    index_file = dir_path / 'index.faiss'
+      
+  def serialize(self, dir_path: str | Path, index_file: str = None) -> None:
+    index_file = dir_path / 'index.faiss' if index_file is None else dir_path / index_file
     LOGGER.info(f'Serializing index to {index_file}')
-    self.index = faiss.index_gpu_to_cpu(self.index)
+    # self.index = faiss.index_gpu_to_cpu(self.index)
     faiss.write_index(self.index, str(index_file))
     
   def deserialize(self, dir_path: Path) -> None:
     index_file = dir_path / 'index.faiss'
     LOGGER.info(f'Deserializing index from {index_file}')
     self.index = faiss.read_index(str(index_file))
+    
+  def merge_index(self, index_files: List[Path]) -> None:
+    index_list = [faiss.read_index(str(index_file)) for index_file in index_files]
+    merged_index = faiss.merge_from_arrays(index_list)
+    self.index = merged_index
     
   def allocate_gpu(self) -> None:
     try:

@@ -1,0 +1,23 @@
+# faiss 로 indexing 해놓은 psg embeddings <--> topiOCQA 데이터 평가 (R, NDCG)
+base:
+  task: topiOCQA
+  use_gpu: True
+  is_debug: False
+inputs:
+  index:
+    path: ./outputs/topiOCQA_maxlen=384_embeddings/debug
+    dim: 768
+    rank_len: 3
+
+  dev: ./rsc/preprocessed/topiOCQA/dev.json
+  dev_inference: ./outputs/eval/openai_eval/gpt-4o_temp=1.0_topiOCQA_dev.jsonl
+  gold: ./rsc/preprocessed/topiOCQA/dev_gold.trec
+  # 1-1 Q0 14979903 1
+  # query_id | 고정 값 | doc_id | rank
+
+model:
+  path: ./rsc/ance-msmarco-passage
+  max_query_length: 192
+  fp16: true
+  batch_size: 128
+  top_k: 100

@@ -1,6 +1,6 @@
 from argparse import Namespace
 import random
-from typing import Dict, List
+from typing import Any, Dict, List
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -97,6 +97,37 @@ class TopiOCQARewriterIRDataset(BaseDataset):
     def collate_fn(self, batch: List[Dict]):
         return batch
     
+class TopiOCQARewriterIRInferenceDataset(BaseDataset):
+    def __init__(self, config: Dict[str, Any], dataset_path: str, tokenizer: AutoTokenizer):
+        """
+        ./config/eval/topiOCQA_debug.yaml 을 참고하세요.
+        """
+        super().__init__(tokenizer)
+        self.config = config
+        self.data = self.load_jsonl(dataset_path)
+    
+    def __getitem__(self, idx: int) -> None:
+        instance = self.data[idx]
+        
+        if 'output' not in instance:
+            print(instance )
+        outputs = self.tokenizer(
+            instance['output']['revised_query'],
+            add_special_tokens=True, 
+            max_length=self.config['model']['max_query_length'],
+            truncation=True,
+            padding="max_length", 
+            return_tensors="pt"
+        )
+        
+        outputs = {k: v.squeeze(dim=0) for k, v in outputs.items()}
+        outputs['id'] = instance['id']
+        return outputs
+    
+    def __len__(self) -> int:
+        return len(self.data)
+
+    
 if __name__ == "__main__":
     args = Namespace(
         data_path="rsc/preprocessed/topiOCQA/train.json", 
@@ -107,17 +138,25 @@ if __name__ == "__main__":
         max_concat_length=256,
     )
     tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-small")
-    dataset = TopiOCQARewriterIRDataset(args, tokenizer)
-    dataset.process_data()
     
-    loader = DataLoader(dataset, batch_size=16, shuffle=True, collate_fn=dataset.collate_fn)
+    config = {
+        "max_query_length": 128,
+    }
     
-    for batch in loader:
-        print(batch)
-        break
-        for k, v in batch['contexts'].items():
-            LOGGER.info(f"{k}: {v.shape}")
-        for k, v in batch.items():
-            if isinstance(v, torch.Tensor):
-                LOGGER.info(f"{k}: {v.shape}")
-        break
+    
+    
+    
+    # dataset = TopiOCQARewriterIRDataset(args, tokenizer)
+    # dataset.process_data()
+    
+    # loader = DataLoader(dataset, batch_size=16, shuffle=True, collate_fn=dataset.collate_fn)
+    
+    # for batch in loader:
+    #     print(batch)
+    #     break
+    #     for k, v in batch['contexts'].items():
+    #         LOGGER.info(f"{k}: {v.shape}")
+    #     for k, v in batch.items():
+    #         if isinstance(v, torch.Tensor):
+    #             LOGGER.info(f"{k}: {v.shape}")
+    #     break

@@ -1,6 +1,4 @@
 from argparse import ArgumentParser
-import gzip
-import json
 import os
 from typing import Any, Dict, Optional
 import numpy as np
@@ -90,7 +88,7 @@ def read_tsv_with_mp(
     passages = {}
     with Pool(processes=num_processes) as pool:
         with open(config['input_path'], 'r', encoding='utf-8') as f:
-            with open(os.path.join("./outputs", f"{config['dataset']}_maxlen={config['max_seq_length']}.bin.gz"), 'wb') as out_f:
+            with open(os.path.join("./outputs", f"{config['dataset']}_maxlen={config['max_seq_length']}.bin"), 'wb') as out_f:
                 # Skip header if present
                 next(f, None)
                 
@@ -111,9 +109,9 @@ def read_tsv_with_mp(
 
 if __name__ == "__main__":
     args = ArgumentParser()
-    args.add_argument("--config", type=str, required=True)
+    args.add_argument("--config_file", type=str, required=True)
     args = args.parse_args()
     
-    config = OmegaConf.load(args.config)
+    config = OmegaConf.load(args.config_file)
     tokenizer = AutoTokenizer.from_pretrained(config['pretrained_passage_encoder'])
     passages = read_tsv_with_mp(config, tokenizer=tokenizer)

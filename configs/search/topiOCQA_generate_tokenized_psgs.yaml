@@ -1,0 +1,5 @@
+dataset: "topiOCQA"
+max_seq_length: 384
+pretrained_passage_encoder: "rsc/ance-msmarco-passage"
+input_path: "./rsc/datasets/topiOCQA/downloads/data/wikipedia_split/full_wiki_segments.tsv"
+

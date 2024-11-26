@@ -1,0 +1,19 @@
+inputs:
+  dataset: "topiOCQA"
+  eval_type: "dev"
+  input_file: "./rsc/preprocessed/topiOCQA/dev.json"
+  output_path: "./outputs/eval/openai_eval/"
+
+prompt:
+  system_prompt: "Revise the current query from `Current Session` as a stand-alone question based on the previous conversation from `Conversation History`, making it context-independent.\n\n# Output Format\n\nThe output should be in JSON format:\n```json\n{\n  \"revised_query\": \"[Your revised context-independent question here]\"\n}\n```"
+
+# OpenAI
+chat_config:
+  seed: 13
+  model: gpt-4o
+  temperature: 1.0  # default temperature
+  max_completion_tokens: 1024
+  secret_path: .secrets/openai
+  max_retries: 10
+  logprobs: false
+  response_format: {"type": "json_object"}

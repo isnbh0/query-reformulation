@@ -1,0 +1,31 @@
+dataset: topiOCQA
+
+is_debug: false
+
+# 8 bytes for ID + 384 * 4 bytes for tokens
+passage_id_bytes: 8
+passage_bytes: 1536 # 384 * 4
+
+fp16: true
+
+# Input file
+input_file: ./outputs/topiOCQA_maxlen=384.bin
+
+# Output directory
+output_dir: ./outputs/topiOCQA_maxlen=384_embedding
+
+# Batch size
+batch_size: 128
+# batch_size: 1024
+
+# Number of workers
+num_workers: 16
+
+# Pin memory
+pin_memory: true
+
+pretrained_passage_encoder: "rsc/ance-msmarco-passage"
+
+# Vector size
+vector_size: 768
+
