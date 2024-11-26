@@ -1,4 +1,6 @@
 from collections import defaultdict
+import json
+import os
 from pathlib import Path
 from typing import Any, Dict
 import pytrec_eval
@@ -98,7 +100,7 @@ def main(config: Dict[str, Any]):
         batch = {k: v.cuda() for k, v in batch.items() if isinstance(v, torch.Tensor)}
         
         if config['model']['fp16']:
-            with torch.cuda.amp.autocast():
+            with torch.cuda.amp.autocast(), torch.no_grad():
                 embedding = model(**batch)
         else:
             with torch.no_grad():
@@ -113,13 +115,11 @@ def main(config: Dict[str, Any]):
             for pid, score in zip(_idx, scores):
                 runs[query_id][str(pid)] = float(score)
                 
-        results = evaluator.evaluate(runs)
-        LOGGER.info(results)
-        exit()
+    results = evaluator.evaluate(runs)
         
     map_list = [v['map'] for v in results.values()]
     mrr_list = [v['recip_rank'] for v in results.values()]
-    ndcg_3_list = [v['ndcg_cut.3'] for v in results.values()]
+    ndcg_3_list = [v['ndcg_cut_3'] for v in results.values()]
     recall_100_list = [v['recall_100'] for v in results.values()]
     recall_20_list = [v['recall_20'] for v in results.values()]
     recall_10_list = [v['recall_10'] for v in results.values()]
@@ -142,6 +142,11 @@ def main(config: Dict[str, Any]):
         "Recall@20": np.mean(recall_20_list),
         "Recall@100": np.mean(recall_100_list), 
     }
+    
+    os.makedirs(Path(config['output']['path']), exist_ok=True)
+    
+    with open(Path(config['output']['path']) / f"eval_results.json", 'w', encoding='utf-8') as f:
+        json.dump(eval_result, f, ensure_ascii=False, indent=4)
     
         
 
